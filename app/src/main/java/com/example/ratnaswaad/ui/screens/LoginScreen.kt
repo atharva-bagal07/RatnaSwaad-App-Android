@@ -1,8 +1,8 @@
 package com.example.ratnaswaad.ui.screens
 
-import android.util.Log
+import android.app.Activity
+import android.widget.Toast
 import androidx.compose.foundation.Image
-import com.example.ratnaswaad.ui.theme.ButtonYellow
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -33,6 +33,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
@@ -43,10 +44,9 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ratnaswaad.R
-import com.google.firebase.auth.FirebaseAuth
 
 @Composable
-fun LoginScreen() {
+fun LoginScreen(goToOtpScreen: () -> Unit) {
 
     var phoneNum by remember {
         mutableStateOf("")
@@ -54,6 +54,11 @@ fun LoginScreen() {
     var password by remember {
         mutableStateOf("")
     }
+    var verificationId by remember {
+        mutableStateOf("")
+    }
+    val context = LocalContext.current
+    val activity = LocalContext.current as Activity
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -185,7 +190,26 @@ fun LoginScreen() {
                         visualTransformation = PasswordVisualTransformation()
                     )
                     Spacer(modifier = Modifier.height(24.dp))
-                    Button(onClick = { /*TODO*/ },
+                    Button(
+                        onClick = {
+                            AuthManager.sendOtp(
+                                phone = phoneNum,
+                                activity = activity,
+                                onCodeSent = {
+                                    verificationId = it
+                                    Toast.makeText(context, "OTP Sent", Toast.LENGTH_SHORT).show()
+                                    goToOtpScreen()
+
+                                },
+                                onError = {
+                                    Toast.makeText(
+                                        context,
+                                        "Retry again in 20 seconds",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            )
+                        },
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFBD25)),
                         modifier = Modifier
                             .padding(bottom = 4.dp)
@@ -194,17 +218,20 @@ fun LoginScreen() {
                             .padding(bottom = 4.dp),
                         shape = RoundedCornerShape(30)
                     ) {
-                        Text("Login", fontFamily = FontFamily(
-                            Font(R.font.poppins_bold, FontWeight.SemiBold)
+                        Text(
+                            "Login", fontFamily = FontFamily(
+                                Font(R.font.poppins_bold, FontWeight.SemiBold)
                         ), fontSize = 16.sp)
                     }
                     Spacer(modifier = Modifier.height(48.dp))
-                    Text(text = "Don't have an account? Sign up now",
+                    Text(
+                        text = "Don't have an account? Sign up",
                         fontSize = 12.sp,
                         color = Color.Black,
                         fontFamily = FontFamily(
                             Font(R.font.poppins_bold, FontWeight.Light)
-                        ))
+                        )
+                    )
 
                 }
             }
