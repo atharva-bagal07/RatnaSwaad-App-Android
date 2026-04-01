@@ -8,9 +8,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import com.example.ratnaswaad.navigation.Navigation
-import com.example.ratnaswaad.navigation.Routes
-import com.example.ratnaswaad.ui.OtpCodeInput
-import com.example.ratnaswaad.ui.screens.OtpScreen
 import com.example.ratnaswaad.ui.theme.RatnaSwaadTheme
 
 class MainActivity : ComponentActivity() {
@@ -23,7 +20,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    OtpCodeInput()
+                    Navigation()
                 }
             }
         }
