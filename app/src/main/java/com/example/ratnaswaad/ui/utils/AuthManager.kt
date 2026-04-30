@@ -1,7 +1,13 @@
+package com.example.ratnaswaad.ui.utils
+
 import android.app.Activity
 import android.util.Log
+import com.example.ratnaswaad.data.FirebaseRepository
 import com.google.firebase.FirebaseException
-import com.google.firebase.auth.*
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.PhoneAuthCredential
+import com.google.firebase.auth.PhoneAuthOptions
+import com.google.firebase.auth.PhoneAuthProvider
 import java.util.concurrent.TimeUnit
 
 object AuthManager {
@@ -14,14 +20,8 @@ object AuthManager {
         onCodeSent: (String) -> Unit,
         onError: (String) -> Unit
     ) {
-
-        // ✅ Clean + format phone
-        val cleanPhone = phone.replace(" ", "")
-        val formattedPhone = if (cleanPhone.startsWith("+91")) {
-            cleanPhone
-        } else {
-            "+91$cleanPhone"
-        }
+        val cleanPhone = phone.trim().replace(" ", "")
+        val formattedPhone = if (cleanPhone.startsWith("+91")) cleanPhone else "+91$cleanPhone"
 
         val options = PhoneAuthOptions.newBuilder(auth)
             .setPhoneNumber(formattedPhone)
@@ -30,24 +30,28 @@ object AuthManager {
             .setCallbacks(object : PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
 
                 override fun onVerificationCompleted(credential: PhoneAuthCredential) {
+                    // Auto-retrieval or instant verification (happens on some devices/test numbers)
                     auth.signInWithCredential(credential)
-                        .addOnCompleteListener {
-                            if (it.isSuccessful) {
-                                Log.d("OTP", "Auto verification success")
-                            }
+                        .addOnSuccessListener {
+                            Log.d("OTP", "Auto verification success")
+                            // Note: navigation is handled by onCodeSent + OtpScreen flow
+                            // Auto-verify won't call onCodeSent, so handle separately if needed
+                        }
+                        .addOnFailureListener {
+                            Log.e("OTP", "Auto verification failed: ${it.message}")
                         }
                 }
 
                 override fun onVerificationFailed(e: FirebaseException) {
                     Log.e("OTP", "Verification Failed: ${e.message}")
-                    onError(e.message ?: "Error")
+                    onError(e.message ?: "Verification failed. Please try again.")
                 }
 
                 override fun onCodeSent(
                     verificationId: String,
                     token: PhoneAuthProvider.ForceResendingToken
                 ) {
-                    Log.d("OTP", "Code Sent")
+                    Log.d("OTP", "Code sent, verificationId: $verificationId")
                     onCodeSent(verificationId)
                 }
             })
@@ -60,18 +64,36 @@ object AuthManager {
         verificationId: String,
         code: String,
         onSuccess: () -> Unit,
-        onError: (String) -> Unit
+        onError: (String) -> Unit,
+        goToHomeScreen: () -> Unit   // kept for compatibility, calls onSuccess then this
     ) {
         val credential = PhoneAuthProvider.getCredential(verificationId, code)
 
         auth.signInWithCredential(credential)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
-                    Log.d("OTP", "Verification Success")
-                    onSuccess()
+                    val user = FirebaseAuth.getInstance().currentUser
+                    val uid = user?.uid ?: run {
+                        onError("Could not retrieve user. Please try again.")
+                        return@addOnCompleteListener
+                    }
+                    val phone = user.phoneNumber
+
+                    FirebaseRepository.saveUserIfNew(
+                        uid = uid,
+                        phone = phone,
+                        onComplete = {
+                            onSuccess()
+                            goToHomeScreen()
+                        },
+                        onError = { error ->
+                            onError(error)
+                        }
+                    )
                 } else {
-                    Log.e("OTP", "Verification Failed: ${task.exception?.message}")
-                    onError(task.exception?.message ?: "Invalid OTP")
+                    val errorMsg = task.exception?.message ?: "Invalid OTP. Please try again."
+                    Log.e("OTP", "Sign-in failed: $errorMsg")
+                    onError(errorMsg)
                 }
             }
     }

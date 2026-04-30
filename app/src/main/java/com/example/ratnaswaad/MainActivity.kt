@@ -8,6 +8,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import com.example.ratnaswaad.navigation.Navigation
+import com.example.ratnaswaad.ui.screens.OtpScreen
 import com.example.ratnaswaad.ui.theme.RatnaSwaadTheme
 
 class MainActivity : ComponentActivity() {

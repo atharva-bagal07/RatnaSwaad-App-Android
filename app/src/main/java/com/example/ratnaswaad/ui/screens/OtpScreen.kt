@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -23,6 +24,7 @@ import androidx.compose.foundation.text.input.maxLength
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -40,30 +42,48 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ratnaswaad.R
-
+import com.example.ratnaswaad.ui.utils.AuthManager
 
 @Composable
 fun OtpScreen(
-    modifier: Modifier = Modifier,
+    verificationId: String,        // ✅ received from Navigation
     goToHomeScreen: () -> Unit
 ) {
-
-    var otp by remember { mutableStateOf("") }
-    var verificationId by remember { mutableStateOf("") }
-
     val context = LocalContext.current
     val otpState = rememberTextFieldState()
+    var isLoading by remember { mutableStateOf(false) }
+
     Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFFCF9F1))
+            .padding(horizontal = 24.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(text = "Enter OTP Code")
+
+        Text(
+            text = "Enter OTP",
+            fontSize = 24.sp,
+            fontFamily = FontFamily(Font(R.font.poppins_bold, FontWeight.SemiBold)),
+            color = Color(0xFF245F35)
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = "We sent a 6-digit code to your phone",
+            fontSize = 13.sp,
+            color = Color.Gray
+        )
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        // OTP input — hidden field drives the 6 visible boxes
         BasicTextField(
             state = otpState,
             inputTransformation = InputTransformation.maxLength(6),
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Number
-            ),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             lineLimits = TextFieldLineLimits.SingleLine,
             decorator = {
                 val otpCode = otpState.text.toString()
@@ -80,40 +100,54 @@ fun OtpScreen(
                 }
             }
         )
-        Text(
-            modifier = Modifier.align(Alignment.End),
-            text = "Resend Code"
-        )
-        Spacer(modifier = Modifier.height(16.dp))
+
+        Spacer(modifier = Modifier.height(40.dp))
+
         Button(
             onClick = {
+                val enteredOtp = otpState.text.toString()   // ✅ read from otpState
+                if (enteredOtp.length < 6) {
+                    Toast.makeText(context, "Please enter the full 6-digit OTP", Toast.LENGTH_SHORT)
+                        .show()
+                    return@Button
+                }
+                isLoading = true
                 AuthManager.verifyOtp(
-                    verificationId = verificationId,
-                    code = otp,
+                    verificationId = verificationId,        // ✅ actual verificationId
+                    code = enteredOtp,
                     onSuccess = {
-                        Toast.makeText(context, "Login Successful", Toast.LENGTH_SHORT).show()
+                        isLoading = false
+                        Toast.makeText(context, "Login Successful!", Toast.LENGTH_SHORT).show()
                         goToHomeScreen()
                     },
-                    onError = {
-                        Toast.makeText(context, "Login Failed", Toast.LENGTH_SHORT).show()
-                    }
+                    onError = { error ->
+                        isLoading = false
+                        Toast.makeText(context, error, Toast.LENGTH_LONG).show()
+                    },
+                    goToHomeScreen = goToHomeScreen
                 )
             },
-
+            enabled = !isLoading,
             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFBD25)),
             modifier = Modifier
-                .padding(bottom = 4.dp)
                 .height(50.dp)
-                .fillMaxWidth(0.8f)
-                .padding(bottom = 4.dp),
+                .fillMaxWidth(0.8f),
             shape = RoundedCornerShape(30)
-        )
-        {
-            Text(
-                "Verify OTP", fontFamily = FontFamily(
-                    Font(R.font.poppins_bold, FontWeight.SemiBold)
-                ), fontSize = 16.sp
-            )
+        ) {
+            if (isLoading) {
+                CircularProgressIndicator(
+                    color = Color(0xFF245F35),
+                    strokeWidth = 2.dp,
+                    modifier = Modifier.size(22.dp)
+                )
+            } else {
+                Text(
+                    text = "Verify OTP",
+                    fontFamily = FontFamily(Font(R.font.poppins_bold, FontWeight.SemiBold)),
+                    fontSize = 16.sp,
+                    color = Color(0xFF245F35)
+                )
+            }
         }
     }
 }
@@ -123,22 +157,22 @@ private fun Digit(
     char: Char,
     highlight: Boolean = false
 ) {
-    val borderSize by animateDpAsState(
-        targetValue = if (highlight) 2.dp else 1.dp
-    )
+    val borderSize by animateDpAsState(targetValue = if (highlight) 2.dp else 1.dp)
     val borderColor by animateColorAsState(
-        targetValue = if (highlight) Color.Blue else Color.LightGray
+        targetValue = if (highlight) Color(0xFF245F35) else Color.LightGray
     )
     Box(
         modifier = Modifier
             .size(48.dp)
-            .border(borderSize, borderColor, RoundedCornerShape(4.dp))
-            .background(Color.Yellow, RoundedCornerShape(4.dp))
+            .border(borderSize, borderColor, RoundedCornerShape(8.dp))
+            .background(color = Color(0xFFF6F3EB), RoundedCornerShape(8.dp))
     ) {
         Text(
-            text = char.toString(),
-            fontSize = 24.sp,
-            modifier = Modifier.align(Alignment.Center)
+            text = if (char == ' ') "" else char.toString(),
+            fontSize = 22.sp,
+            modifier = Modifier.align(Alignment.Center),
+            color = Color.Black,
+            fontFamily = FontFamily(Font(R.font.poppins_bold, FontWeight.SemiBold))
         )
     }
 }
