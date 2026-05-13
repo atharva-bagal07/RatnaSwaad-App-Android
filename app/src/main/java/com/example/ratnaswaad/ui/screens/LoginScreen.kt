@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ratnaswaad.R
 import com.example.ratnaswaad.ui.utils.AuthManager
+import com.google.firebase.ktx.BuildConfig
 
 @Composable
 fun LoginScreen(
@@ -233,6 +234,20 @@ fun LoginScreen(
                                 fontSize = 16.sp,
                                 color = Color(0xFF245F35)
                             )
+                            // Debug bypass — remove before release
+                            if (BuildConfig.DEBUG) {
+                                Spacer(modifier = Modifier.height(12.dp))
+                                TextButton(
+                                    onClick = { goToOtpScreen("debug_bypass") }
+                                ) {
+                                    Text(
+                                        text = "⚡ Skip OTP (Debug)",
+                                        color = Color.Gray,
+                                        fontSize = 11.sp,
+                                        fontFamily = PoppinsBold
+                                    )
+                                }
+                            }
                         }
                     }
 

@@ -106,6 +106,11 @@ fun OtpScreen(
         Button(
             onClick = {
                 val enteredOtp = otpState.text.toString()   // ✅ read from otpState
+                // Debug bypass
+                if (verificationId == "debug_bypass") {
+                    goToHomeScreen()
+                    return@Button
+                }
                 if (enteredOtp.length < 6) {
                     Toast.makeText(context, "Please enter the full 6-digit OTP", Toast.LENGTH_SHORT)
                         .show()
